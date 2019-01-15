@@ -202,6 +202,8 @@ each")
         help="Random seed for Dynet")
     group.add_option("--dynet-mem", type="int", metavar="INTEGER",
         help="Memory to assign Dynet in MB", default=512)
+    group.add_option("--dynet-devices", type="str", metavar="STRING",
+        help="Devices to run the code. E.g. GPU:0 or CPU.", default="CPU")
     group.add_option("--learning-rate", type="float", metavar="FLOAT",
         help="Learning rate for neural network optimizer", default=0.001)
     group.add_option("--char-emb-size", type="int", metavar="INTEGER",
