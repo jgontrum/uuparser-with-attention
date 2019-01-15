@@ -1,3 +1,4 @@
+from bilstm import BiLSTM
 from utils import ParseForest, read_conll, write_conll
 from operator import itemgetter
 from itertools import chain
@@ -40,14 +41,28 @@ class ArcHybridLSTM:
         self.feature_extractor = FeatureExtractor(self.model,options,vocab,self.nnvecs)
         self.irels = self.feature_extractor.irels
 
-        if options.no_bilstms > 0:
-            mlp_in_dims = options.lstm_output_size*2*self.nnvecs*(self.k+1)
-        else:
-            mlp_in_dims = self.feature_extractor.lstm_input_size*self.nnvecs*(self.k+1)
+        # if options.no_bilstms > 0:
+        #     mlp_in_dims = options.lstm_output_size*2*self.nnvecs*(self.k+1)
+        # else:
+        #     mlp_in_dims = self.feature_extractor.lstm_input_size*self.nnvecs*(self.k+1)
 
-        self.unlabeled_MLP = MLP(self.model, 'unlabeled', mlp_in_dims, options.mlp_hidden_dims,
+        self.stack_encoder = BiLSTM(
+            in_dim=options.lstm_output_size * 2 * self.nnvecs,
+            out_dim=256,
+            model=self.model,
+            dropout_rate=0.33
+        )
+
+        self.buffer_encoder = BiLSTM(
+            in_dim=options.lstm_output_size * 2 * self.nnvecs,
+            out_dim=256,
+            model=self.model,
+            dropout_rate=0.33
+        )
+
+        self.unlabeled_MLP = MLP(self.model, 'unlabeled', 256 * 4, options.mlp_hidden_dims,
                                  options.mlp_hidden2_dims, 4, self.activation)
-        self.labeled_MLP = MLP(self.model, 'labeled' ,mlp_in_dims, options.mlp_hidden_dims,
+        self.labeled_MLP = MLP(self.model, 'labeled' ,256 * 4, options.mlp_hidden_dims,
                                options.mlp_hidden2_dims,2*len(self.irels)+2,self.activation)
 
 
@@ -63,13 +78,27 @@ class ArcHybridLSTM:
         ret[i][j][2] ~= ret[i][j][3] except the latter is a dynet
         expression used in the loss, the first is used in rest of training
         """
+        stack_sequence = [
+            dy.concatenate(list(chain(root.lstms)))
+            for root in stack.roots
+        ] if stack.roots else [self.feature_extractor.empty]
 
-        #feature rep
-        empty = self.feature_extractor.empty
-        topStack = [ stack.roots[-i-1].lstms if len(stack) > i else [empty] for i in xrange(self.k) ]
-        topBuffer = [ buf.roots[i].lstms if len(buf) > i else [empty] for i in xrange(1) ]
+        buffer_sequence = [
+            dy.concatenate(list(chain(root.lstms)))
+            for root in buf.roots
+        ] if buf.roots else [self.feature_extractor.empty]
 
-        input = dy.concatenate(list(chain(*(topStack + topBuffer))))
+        stack_encoding = self.stack_encoder.get_sequence_vector(
+            sequence=stack_sequence,
+            dropout=0.33
+        )
+
+        buffer_encoding = self.buffer_encoder.get_sequence_vector(
+            sequence=buffer_sequence,
+            dropout=0.33
+        )
+
+        input = dy.concatenate([stack_encoding, buffer_encoding])
         output = self.unlabeled_MLP(input)
         routput = self.labeled_MLP(input)
 
