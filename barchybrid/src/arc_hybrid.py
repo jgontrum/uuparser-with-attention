@@ -48,22 +48,37 @@ class ArcHybridLSTM:
 
         self.stack_encoder = BiLSTM(
             in_dim=options.lstm_output_size * 2 * self.nnvecs,
-            out_dim=256,
+            out_dim=options.encoder_output_size,
             model=self.model,
             dropout_rate=0.33
         )
 
         self.buffer_encoder = BiLSTM(
             in_dim=options.lstm_output_size * 2 * self.nnvecs,
-            out_dim=256,
+            out_dim=options.encoder_output_size,
             model=self.model,
             dropout_rate=0.33
         )
 
-        self.unlabeled_MLP = MLP(self.model, 'unlabeled', 256 * 4, options.mlp_hidden_dims,
-                                 options.mlp_hidden2_dims, 4, self.activation)
-        self.labeled_MLP = MLP(self.model, 'labeled' ,256 * 4, options.mlp_hidden_dims,
-                               options.mlp_hidden2_dims,2*len(self.irels)+2,self.activation)
+        self.unlabeled_MLP = MLP(
+            self.model,
+            'unlabeled',
+            options.encoder_output_size * 4,
+            options.mlp_hidden_dims,
+            options.mlp_hidden2_dims,
+            4,
+            self.activation
+        )
+
+        self.labeled_MLP = MLP(
+            self.model,
+            'labeled',
+            options.encoder_output_size * 4,
+            options.mlp_hidden_dims,
+            options.mlp_hidden2_dims,
+            2 * len(self.irels) + 2,
+            self.activation
+        )
 
 
     def __evaluate(self, stack, buf, train):

@@ -216,6 +216,8 @@ each")
         help="Pos embedding dimensions", default=0)
     group.add_option("--tbank-emb-size", type="int", metavar="INTEGER",
         help="Treebank embedding dimensions", default=12)
+    group.add_option("--encoder-output-size", type="int", metavar="INTEGER",
+                     help="Stack/buffer encoder output dimensions", default=512)
     group.add_option("--lstm-output-size", type="int", metavar="INTEGER",
         help="Word BiLSTM dimensions", default=125)
     group.add_option("--mlp-hidden-dims", type="int", metavar="INTEGER",
