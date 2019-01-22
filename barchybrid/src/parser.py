@@ -4,6 +4,16 @@ from options_manager import OptionsManager
 import pickle, utils, os, time, sys, copy, itertools, re, random
 from shutil import copyfile
 import codecs
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+
 
 def run(experiment,options):
 

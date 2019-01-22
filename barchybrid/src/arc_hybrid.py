@@ -1,3 +1,4 @@
+from encoder import EncoderNetwork
 from bilstm import BiLSTM
 from utils import ParseForest, read_conll, write_conll
 from operator import itemgetter
@@ -41,23 +42,18 @@ class ArcHybridLSTM:
         self.feature_extractor = FeatureExtractor(self.model,options,vocab,self.nnvecs)
         self.irels = self.feature_extractor.irels
 
-        # if options.no_bilstms > 0:
-        #     mlp_in_dims = options.lstm_output_size*2*self.nnvecs*(self.k+1)
-        # else:
-        #     mlp_in_dims = self.feature_extractor.lstm_input_size*self.nnvecs*(self.k+1)
-
-        self.stack_encoder = BiLSTM(
-            in_dim=options.lstm_output_size * 2 * self.nnvecs,
-            out_dim=options.encoder_output_size,
+        self.stack_encoder = EncoderNetwork(
             model=self.model,
-            dropout_rate=0.33
+            input_dim=options.lstm_output_size * 2 * self.nnvecs,
+            output_dim=options.encoder_output_size,
+            rnn_dropout_rate=0.1
         )
 
-        self.buffer_encoder = BiLSTM(
-            in_dim=options.lstm_output_size * 2 * self.nnvecs,
-            out_dim=options.encoder_output_size,
+        self.buffer_encoder = EncoderNetwork(
             model=self.model,
-            dropout_rate=0.33
+            input_dim=options.lstm_output_size * 2 * self.nnvecs,
+            output_dim=options.encoder_output_size,
+            rnn_dropout_rate=0.1
         )
 
         self.unlabeled_MLP = MLP(
@@ -103,20 +99,12 @@ class ArcHybridLSTM:
             for root in buf.roots
         ] if buf.roots else [self.feature_extractor.empty]
 
-        stack_encoding = self.stack_encoder.get_sequence_vector(
-            sequence=stack_sequence,
-            dropout=0.33
-        )
-
-        buffer_encoding = self.buffer_encoder.get_sequence_vector(
-            sequence=buffer_sequence,
-            dropout=0.33
-        )
+        stack_encoding = self.stack_encoder(stack_sequence)
+        buffer_encoding = self.buffer_encoder(buffer_sequence)
 
         input = dy.concatenate([stack_encoding, buffer_encoding])
         output = self.unlabeled_MLP(input)
         routput = self.labeled_MLP(input)
-
 
         #scores, unlabeled scores
         scrs, uscrs = routput.value(), output.value()
