@@ -12,14 +12,14 @@ class AttentionNetwork:
 
         self.model = model
         self.input_dim = input_dim
-        self.output_dim = output_dim
+        self.output_dim = input_dim
 
-        self.w1 = self.model.add_parameters((output_dim, output_dim))
-        self.v = self.model.add_parameters((1, output_dim))
+        self.w1 = self.model.add_parameters((self.output_dim, self.output_dim))
+        self.v = self.model.add_parameters((1, self.output_dim))
 
-        self.encoder = EncoderNetwork(
-            self.model, self.input_dim, self.output_dim, rnn_dropout_rate
-        )
+        # self.encoder = EncoderNetwork(
+        #     self.model, self.input_dim, self.output_dim, rnn_dropout_rate
+        # )
 
         self.logger.debug("Initialized Attention Network.")
 
@@ -32,7 +32,7 @@ class AttentionNetwork:
 
         # 1.) Feed the input sequence through the encoder and get
         #     the hidden states for every input word.
-        encoded_sequence = self.encoder.get_encoded_sequence(input_sequence)
+        encoded_sequence = input_sequence #self.encoder.get_encoded_sequence(input_sequence)
 
         # 2.) Calculate the attention weight for every vector in the encoding
         attention_weights = []

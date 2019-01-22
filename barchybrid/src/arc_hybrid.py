@@ -43,16 +43,17 @@ class ArcHybridLSTM:
         self.feature_extractor = FeatureExtractor(self.model,options,vocab,self.nnvecs)
         self.irels = self.feature_extractor.irels
 
+        encoder_input_dim = options.lstm_output_size * 2 * self.nnvecs
         self.stack_encoder = AttentionNetwork(
             model=self.model,
-            input_dim=options.lstm_output_size * 2 * self.nnvecs,
+            input_dim=encoder_input_dim,
             output_dim=options.encoder_output_size,
             rnn_dropout_rate=0.33
         )
 
         self.buffer_encoder = AttentionNetwork(
             model=self.model,
-            input_dim=options.lstm_output_size * 2 * self.nnvecs,
+            input_dim=encoder_input_dim,
             output_dim=options.encoder_output_size,
             rnn_dropout_rate=0.33
         )
@@ -60,7 +61,7 @@ class ArcHybridLSTM:
         self.unlabeled_MLP = MLP(
             self.model,
             'unlabeled',
-            options.encoder_output_size * 2,
+            encoder_input_dim * 2,
             options.mlp_hidden_dims,
             options.mlp_hidden2_dims,
             4,
@@ -70,7 +71,7 @@ class ArcHybridLSTM:
         self.labeled_MLP = MLP(
             self.model,
             'labeled',
-            options.encoder_output_size * 2,
+            encoder_input_dim * 2,
             options.mlp_hidden_dims,
             options.mlp_hidden2_dims,
             2 * len(self.irels) + 2,
