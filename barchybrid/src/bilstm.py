@@ -34,6 +34,27 @@ class BiLSTM(object):
         for token in sequence:
             token.vec = dy.concatenate( [token.fvec, token.bvec] )
 
+    def get_sequence_vectors(self, sequence, dropout):
+        if dropout and self.dropout_rate is not None:
+            self.surfaceBuilders[0].set_dropout(self.dropout_rate)
+            self.surfaceBuilders[1].set_dropout(self.dropout_rate)
+        else:
+            self.surfaceBuilders[0].set_dropout(0)
+            self.surfaceBuilders[1].set_dropout(0)
+
+        forward = self.surfaceBuilders[0].initial_state()
+        backward = self.surfaceBuilders[1].initial_state()
+
+        outputs = []
+        for forward_token, backward_token in zip(sequence, reversed(sequence)):
+            forward = forward.add_input(forward_token)
+            backward = backward.add_input(backward_token)
+            outputs.append([forward.output(), backward.output()])
+
+        return [
+            dy.concatenate(output) for output in outputs
+        ]
+
     def get_sequence_vector(self,sequence,dropout):
         """
         Pass a sequence of vectors through the BiLSTM. Return the sequence

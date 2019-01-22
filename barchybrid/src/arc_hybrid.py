@@ -1,3 +1,4 @@
+from attention import AttentionNetwork
 from encoder import EncoderNetwork
 from bilstm import BiLSTM
 from utils import ParseForest, read_conll, write_conll
@@ -42,24 +43,24 @@ class ArcHybridLSTM:
         self.feature_extractor = FeatureExtractor(self.model,options,vocab,self.nnvecs)
         self.irels = self.feature_extractor.irels
 
-        self.stack_encoder = EncoderNetwork(
+        self.stack_encoder = AttentionNetwork(
             model=self.model,
             input_dim=options.lstm_output_size * 2 * self.nnvecs,
             output_dim=options.encoder_output_size,
-            rnn_dropout_rate=0.1
+            rnn_dropout_rate=0.33
         )
 
-        self.buffer_encoder = EncoderNetwork(
+        self.buffer_encoder = AttentionNetwork(
             model=self.model,
             input_dim=options.lstm_output_size * 2 * self.nnvecs,
             output_dim=options.encoder_output_size,
-            rnn_dropout_rate=0.1
+            rnn_dropout_rate=0.33
         )
 
         self.unlabeled_MLP = MLP(
             self.model,
             'unlabeled',
-            options.encoder_output_size * 4,
+            options.encoder_output_size * 2,
             options.mlp_hidden_dims,
             options.mlp_hidden2_dims,
             4,
@@ -69,7 +70,7 @@ class ArcHybridLSTM:
         self.labeled_MLP = MLP(
             self.model,
             'labeled',
-            options.encoder_output_size * 4,
+            options.encoder_output_size * 2,
             options.mlp_hidden_dims,
             options.mlp_hidden2_dims,
             2 * len(self.irels) + 2,
